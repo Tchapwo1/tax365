@@ -172,9 +172,9 @@ export default async function TaxYearPage({ params, searchParams }: PageProps) {
               </div>
             </div>
             {/* Floating Chat Bubble Icon like in reference */}
-            <div className="absolute bottom-8 right-8 w-16 h-16 bg-[#18181B] rounded-full flex items-center justify-center shadow-xl">
+            <div className="absolute bottom-8 right-8 w-16 h-16 bg-accent_primary rounded-full flex items-center justify-center shadow-xl">
                <span className="text-white text-3xl">💬</span>
-               <div className="absolute top-0 right-0 w-5 h-5 bg-red-500 rounded-full border-2 border-taxfix_purple flex items-center justify-center text-[10px] text-white font-bold">1</div>
+               <div className="absolute top-0 right-0 w-5 h-5 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-[10px] text-white font-bold">1</div>
             </div>
           </div>
 

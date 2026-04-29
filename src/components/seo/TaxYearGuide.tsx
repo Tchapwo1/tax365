@@ -39,7 +39,7 @@ export const TaxYearGuide: React.FC<Props> = ({ config }) => {
           <h2 className="text-4xl font-black text-text_primary tracking-tighter">Understanding your UK tax</h2>
           
           {/* MSE-Style Expert Tip */}
-          <div className="bg-[#18181B]/5 border-l-8 border-[#FF5A1F] p-8 rounded-r-[2rem] my-8">
+          <div className="bg-accent_primary/10 border-l-8 border-[#FF5A1F] p-8 rounded-r-[2rem] my-8">
             <div className="flex items-start gap-4">
               <span className="text-2xl">💡</span>
               <div className="flex flex-col gap-2">
@@ -117,14 +117,14 @@ export const TaxYearGuide: React.FC<Props> = ({ config }) => {
           </div>
         </section>
 
-        <div className="bg-taxfix_purple rounded-[3rem] p-12 md:p-20 text-text_primary relative overflow-hidden shadow-sm">
+        <div className="bg-action-gradient rounded-[3rem] p-12 md:p-20 text-white relative overflow-hidden shadow-sm">
           <div className="absolute top-0 right-0 -mr-12 -mt-12 w-48 h-48 bg-white/20 rounded-full blur-2xl" />
-          <h3 className="text-3xl font-black mb-4 relative z-10 tracking-tighter">Expert Tax Advice</h3>
-          <p className="text-text_primary font-medium text-lg leading-relaxed relative z-10 max-w-2xl mb-8 opacity-80">
+          <h3 className="text-3xl font-black mb-4 relative z-10 tracking-tighter text-white">Expert Tax Advice</h3>
+          <p className="text-white/80 font-medium text-lg leading-relaxed relative z-10 max-w-2xl mb-8">
             Taxes can be complicated, especially if you have multiple income sources or high earnings. 
             Our accredited accountants are here to help you maximize your take-home pay legally and safely.
           </p>
-          <button className="bg-text_primary text-white px-10 py-4 rounded-full font-black text-lg hover:scale-105 transition-transform relative z-10 shadow-lg">
+          <button className="bg-white text-text_primary px-10 py-4 rounded-full font-black text-lg hover:scale-105 transition-transform relative z-10 shadow-lg">
             Talk to an Expert
           </button>
         </div>
