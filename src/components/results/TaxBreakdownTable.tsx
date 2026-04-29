@@ -62,6 +62,10 @@ export const TaxBreakdownTable: React.FC = () => {
           </tbody>
         </table>
       </div>
+      <p className="text-[10px] text-text_secondary leading-relaxed">
+        * Dividend tax is calculated annually and is not prorated monthly or weekly. 
+        Income tax calculations assume dividends are the top-slice of your income.
+      </p>
     </div>
   )
 }

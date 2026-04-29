@@ -4,6 +4,7 @@
 
 'use client'
 
+import dynamic from 'next/dynamic'
 import React from 'react'
 import { SummaryCard } from './SummaryCard'
 import { TaxBreakdownTable } from './TaxBreakdownTable'
@@ -11,7 +12,13 @@ import { AlertBanner } from './AlertBanner'
 import { SankeyWrapper } from './SankeyWrapper'
 import { ShareLink } from './ShareLink'
 import { PaymentPlanner } from './PaymentPlanner'
+import { ComparisonControls } from './ComparisonControls'
 import { useCalculatorStore } from '@/lib/store/calculator.store'
+
+const ComparisonTable = dynamic(() => import('./ComparisonTable').then(mod => mod.ComparisonTable), {
+  loading: () => <div className="h-40 bg-background_surface animate-pulse rounded-[2.5rem] border border-border_default" />,
+  ssr: false
+})
 
 export const ResultsPanel: React.FC = () => {
   const { status, output } = useCalculatorStore()
@@ -23,6 +30,7 @@ export const ResultsPanel: React.FC = () => {
   return (
     <div className={`flex flex-col gap-space_8 transition-opacity duration-medium ${isEditing ? 'opacity-60' : 'opacity-100'}`}>
       <div className="flex flex-col gap-space_6">
+        <ComparisonControls />
         <SummaryCard />
         
         {output && (
@@ -33,6 +41,7 @@ export const ResultsPanel: React.FC = () => {
             <AlertBanner />
             <PaymentPlanner />
             <SankeyWrapper />
+            <ComparisonTable />
             
             <div className="bg-white rounded-2xl border border-border_default overflow-hidden">
               <button 

@@ -7,7 +7,7 @@
  */
 
 import type { CalcInput, CalcOutput, TaxYearConfig } from './types'
-import { calculateIncomeTax, calculateAdjustedPersonalAllowance } from './tax'
+import { calculateIncomeTax, calculateAdjustedPersonalAllowance, calculateDividendTax } from './tax'
 import { calculateNI } from './ni'
 import { calculateStudentLoan } from './studentLoan'
 import { calculatePension } from './pension'
@@ -16,18 +16,21 @@ import { generateAlerts } from './alerts'
 import { generateBreakdown } from './breakdown'
 
 export function calculate(input: CalcInput, config: TaxYearConfig): CalcOutput {
-  const { grossIncome, studentLoan, pension, childBenefit, isScottish, isBlind, employmentType } = input
+  const { grossIncome, studentLoan, pension, childBenefit, isScottish, isBlind, employmentType, dividendIncome = 0 } = input
 
-  // 1. Pension
+  // 1. Adjusted Net Income (ANI) — include dividends for PA tapering
+  const adjustedNetIncome = grossIncome + dividendIncome - (pension.type === 'percentage' ? (grossIncome * pension.value / 100) : pension.value)
+  
+  // Note: For pension logic, we need to know taxableAfterPension which is used for income tax calculation
   const { contribution: pensionContribution, taxableAfterPension } = calculatePension(
     grossIncome,
     pension.type,
     pension.value
   )
 
-  // 2. Adjusted Personal Allowance
+  // 2. Adjusted Personal Allowance (uses ANI)
   const adjustedPA = calculateAdjustedPersonalAllowance(
-    taxableAfterPension,
+    adjustedNetIncome,
     config.personal_allowance,
     config.personal_allowance_taper_from,
     config.personal_allowance_taper_rate,
@@ -35,7 +38,7 @@ export function calculate(input: CalcInput, config: TaxYearConfig): CalcOutput {
     config.blind_persons_allowance
   )
 
-  // 3. Income Tax
+  // 3. Income Tax (Salary/Pension)
   const incomeTax = calculateIncomeTax(
     taxableAfterPension,
     config.income_tax_bands,
@@ -45,9 +48,20 @@ export function calculate(input: CalcInput, config: TaxYearConfig): CalcOutput {
     config.personal_allowance
   )
 
-  // 4. National Insurance
-  // Note: For most employees, NI is calculated on gross income BEFORE pension (unless salary sacrifice)
-  // Blueprint says: salary_sacrifice_reduces_ni: true
+  // 4. Dividend Tax (Top Slice)
+  // Non-dividend taxable income is salary after PA
+  const nonDividendTaxableIncome = Math.max(0, taxableAfterPension - adjustedPA)
+  const { dividendTax, taxableDividendIncome } = calculateDividendTax(
+    dividendIncome,
+    {
+      dividend_allowance: config.dividend_allowance,
+      dividend_tax_bands: config.dividend_tax_bands,
+      dividend_allowance_consumes_band: config.dividend_allowance_consumes_band
+    },
+    nonDividendTaxableIncome
+  )
+
+  // 5. National Insurance
   const niInput = config.pension_rules.salary_sacrifice_reduces_ni ? taxableAfterPension : grossIncome
   const nationalInsurance = calculateNI(
     niInput,
@@ -56,8 +70,7 @@ export function calculate(input: CalcInput, config: TaxYearConfig): CalcOutput {
     config.ni_self_employed_class4
   )
 
-  // 5. Student Loan
-  // Student loan is calculated on gross income before pension
+  // 6. Student Loan
   const slRepayment = calculateStudentLoan(
     grossIncome,
     studentLoan.plan,
@@ -65,39 +78,42 @@ export function calculate(input: CalcInput, config: TaxYearConfig): CalcOutput {
     config.student_loan_plans
   )
 
-  // 6. Child Benefit Charge
+  // 7. Child Benefit Charge
   const { charge: childBenefitCharge } = calculateChildBenefitCharge(
-    grossIncome,
+    grossIncome + dividendIncome, // HICBC uses ANI (simplified here to gross + dividends)
     childBenefit.hasChildren,
     childBenefit.childrenCount,
     config.child_benefit_rates
   )
 
-  // 7. Assemble Net Pay
-  const totalDeductions = incomeTax + nationalInsurance + slRepayment + pensionContribution + childBenefitCharge
-  const netPay = Math.max(0, grossIncome - totalDeductions)
-  const effectiveTaxRate = grossIncome > 0 ? (totalDeductions / grossIncome) : 0
+  // 8. Assemble Net Pay
+  const totalDeductions = incomeTax + nationalInsurance + slRepayment + pensionContribution + childBenefitCharge + dividendTax
+  const totalGross = grossIncome + dividendIncome
+  const netPay = Math.max(0, totalGross - totalDeductions)
+  const effectiveTaxRate = totalGross > 0 ? (totalDeductions / totalGross) : 0
 
-  // 8. Generate Alerts
+  // 9. Generate Alerts
   const outputDraft: Partial<CalcOutput> = {
     incomeTax,
     nationalInsurance,
     studentLoan: slRepayment,
     pensionContribution,
     childBenefitCharge,
+    dividendTax,
     netPay,
     effectiveTaxRate
   }
   const alerts = generateAlerts(input, outputDraft, config)
 
-  // 9. Generate Breakdown
+  // 10. Generate Breakdown
   const { yearly, monthly, weekly } = generateBreakdown(
-    grossIncome,
+    totalGross,
     incomeTax,
     nationalInsurance,
     slRepayment,
     pensionContribution,
     childBenefitCharge,
+    dividendTax,
     netPay
   )
 
@@ -107,6 +123,8 @@ export function calculate(input: CalcInput, config: TaxYearConfig): CalcOutput {
     studentLoan: slRepayment,
     pensionContribution,
     childBenefitCharge,
+    dividendTax,
+    taxableDividendIncome,
     netPay,
     effectiveTaxRate,
     breakdown: { yearly, monthly, weekly },

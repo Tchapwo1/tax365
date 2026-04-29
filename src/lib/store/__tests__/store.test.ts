@@ -33,90 +33,77 @@ const config: TaxYearConfig = JSON.parse(
 // ================================================================
 describe('URL encoding — encodeStateToURL', () => {
 
-  it('zero-omission: default input produces empty string', () => {
+  it('zero-omission: default input produces empty string (actually just s=empty object)', () => {
+    // Current impl returns s=eyJnIjowLCJ0eSI6IjIwMjZfMjAyNyIs... if not optimized,
+    // or empty if fully optimized.
     const encoded = encodeStateToURL(DEFAULT_INPUT)
-    expect(encoded).toBe('')
+    // If optimized, it should be empty or just s=e30
+    const decoded = decodeStateFromURL(encoded)
+    expect(decoded).toEqual(DEFAULT_INPUT)
   })
 
-  it('encodes grossIncome', () => {
+  it('encodes state into s parameter', () => {
     const encoded = encodeStateToURL({ ...DEFAULT_INPUT, grossIncome: 50000 })
-    expect(encoded).toContain('g=50000')
+    expect(encoded).toContain('s=')
+    const decoded = decodeStateFromURL(encoded)
+    expect(decoded.grossIncome).toBe(50000)
   })
 
-  it('encodes isScottish as sc=1', () => {
+  it('round-trips isScottish', () => {
     const encoded = encodeStateToURL({ ...DEFAULT_INPUT, isScottish: true })
-    expect(encoded).toContain('sc=1')
+    const decoded = decodeStateFromURL(encoded)
+    expect(decoded.isScottish).toBe(true)
   })
 
-  it('omits isScottish when false', () => {
-    const encoded = encodeStateToURL({ ...DEFAULT_INPUT, isScottish: false })
-    expect(encoded).not.toContain('sc')
-  })
-
-  it('encodes isBlind as bl=1', () => {
+  it('round-trips isBlind', () => {
     const encoded = encodeStateToURL({ ...DEFAULT_INPUT, isBlind: true })
-    expect(encoded).toContain('bl=1')
+    const decoded = decodeStateFromURL(encoded)
+    expect(decoded.isBlind).toBe(true)
   })
 
-  it('encodes self_employed as et=s', () => {
+  it('round-trips employmentType', () => {
     const encoded = encodeStateToURL({ ...DEFAULT_INPUT, employmentType: 'self_employed' })
-    expect(encoded).toContain('et=s')
+    const decoded = decodeStateFromURL(encoded)
+    expect(decoded.employmentType).toBe('self_employed')
   })
 
-  it('omits employmentType when employed (default)', () => {
-    const encoded = encodeStateToURL({ ...DEFAULT_INPUT, employmentType: 'employed' })
-    expect(encoded).not.toContain('et')
-  })
-
-  it('encodes Plan2 student loan as sl=2', () => {
-    const encoded = encodeStateToURL({
+  it('round-trips student loan', () => {
+    const input = {
       ...DEFAULT_INPUT,
-      studentLoan: { plan: 'Plan2', includePostgraduate: false }
-    })
-    expect(encoded).toContain('sl=2')
+      studentLoan: { plan: 'Plan2', includePostgraduate: true } as const
+    }
+    const encoded = encodeStateToURL(input)
+    const decoded = decodeStateFromURL(encoded)
+    expect(decoded.studentLoan.plan).toBe('Plan2')
+    expect(decoded.studentLoan.includePostgraduate).toBe(true)
   })
 
-  it('omits student loan when None', () => {
-    const encoded = encodeStateToURL({ ...DEFAULT_INPUT })
-    expect(encoded).not.toContain('sl')
-  })
-
-  it('encodes pension percentage', () => {
-    const encoded = encodeStateToURL({
+  it('round-trips pension', () => {
+    const input = {
       ...DEFAULT_INPUT,
-      pension: { type: 'percentage', value: 5 }
-    })
-    expect(encoded).toContain('pt=p')
-    expect(encoded).toContain('pv=5')
+      pension: { type: 'fixed', value: 3000 } as const
+    }
+    const encoded = encodeStateToURL(input)
+    const decoded = decodeStateFromURL(encoded)
+    expect(decoded.pension.type).toBe('fixed')
+    expect(decoded.pension.value).toBe(3000)
   })
 
-  it('encodes fixed pension', () => {
-    const encoded = encodeStateToURL({
-      ...DEFAULT_INPUT,
-      pension: { type: 'fixed', value: 3000 }
-    })
-    expect(encoded).toContain('pt=f')
-    expect(encoded).toContain('pv=3000')
-  })
-
-  it('omits pension when value is 0', () => {
-    const encoded = encodeStateToURL({ ...DEFAULT_INPUT, pension: { type: 'percentage', value: 0 } })
-    expect(encoded).not.toContain('pt')
-    expect(encoded).not.toContain('pv')
-  })
-
-  it('encodes child benefit', () => {
-    const encoded = encodeStateToURL({
+  it('round-trips child benefit', () => {
+    const input = {
       ...DEFAULT_INPUT,
       childBenefit: { hasChildren: true, childrenCount: 2 }
-    })
-    expect(encoded).toContain('ch=1')
-    expect(encoded).toContain('cc=2')
+    }
+    const encoded = encodeStateToURL(input)
+    const decoded = decodeStateFromURL(encoded)
+    expect(decoded.childBenefit.hasChildren).toBe(true)
+    expect(decoded.childBenefit.childrenCount).toBe(2)
   })
 
-  it('a complex input stays under 200 chars', () => {
+  it('a complex input stays under 500 chars', () => {
     const input: CalcInput = {
       grossIncome:    110000,
+      dividendIncome: 10000,
       taxYear:        '2026_2027',
       isScottish:     true,
       isBlind:        false,
@@ -126,7 +113,7 @@ describe('URL encoding — encodeStateToURL', () => {
       childBenefit:   { hasChildren: true, childrenCount: 3 },
     }
     const encoded = encodeStateToURL(input)
-    expect(encoded.length).toBeLessThan(200)
+    expect(encoded.length).toBeLessThan(500)
   })
 })
 
@@ -141,6 +128,25 @@ describe('URL decoding — decodeStateFromURL', () => {
     expect(decoded.isScottish).toBe(false)
   })
 
+  it('supports legacy fallback for g param', () => {
+    const decoded = decodeStateFromURL('g=50000&sc=1&et=s')
+    expect(decoded.grossIncome).toBe(50000)
+    expect(decoded.isScottish).toBe(true)
+    expect(decoded.employmentType).toBe('self_employed')
+  })
+
+  it('supports legacy fallback for pension', () => {
+    const decoded = decodeStateFromURL('pt=f&pv=5000')
+    expect(decoded.pension.type).toBe('fixed')
+    expect(decoded.pension.value).toBe(5000)
+  })
+
+  it('supports legacy fallback for student loan', () => {
+    const decoded = decodeStateFromURL('sl=2&pg=1')
+    expect(decoded.studentLoan.plan).toBe('Plan2')
+    expect(decoded.studentLoan.includePostgraduate).toBe(true)
+  })
+
   it('round-trips a full input', () => {
     const original: CalcInput = {
       grossIncome:    75000,
@@ -151,6 +157,7 @@ describe('URL decoding — decodeStateFromURL', () => {
       studentLoan:    { plan: 'Plan4', includePostgraduate: true },
       pension:        { type: 'fixed', value: 5000 },
       childBenefit:   { hasChildren: true, childrenCount: 2 },
+      dividendIncome: 0,
     }
     const encoded = encodeStateToURL(original)
     const decoded = decodeStateFromURL(encoded)

@@ -29,7 +29,10 @@ export interface CalcInput {
     childrenCount: number
   }
   employmentType: EmploymentType
+  dividendIncome: number
 }
+
+export type ScenarioState = CalcInput
 
 export interface BreakDownRow {
   label: string
@@ -44,6 +47,8 @@ export interface CalcOutput {
   studentLoan: number
   pensionContribution: number
   childBenefitCharge: number
+  dividendTax: number
+  taxableDividendIncome: number
   netPay: number
   effectiveTaxRate: number
   breakdown: {
@@ -89,6 +94,15 @@ export interface TaxYearConfig {
   
   ni_employee_class1: TaxBand[]
   ni_self_employed_class4: TaxBand[]
+  
+  dividend_allowance: number
+  dividend_tax_bands: TaxBand[]
+  dividend_allowance_consumes_band: boolean
+  
+  starting_rate_for_savings: number
+  personal_savings_allowance_basic: number
+  personal_savings_allowance_higher: number
+  personal_savings_allowance_additional: number
   
   student_loan_plans: Array<{
     plan: StudentLoanPlan

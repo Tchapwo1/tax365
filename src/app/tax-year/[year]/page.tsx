@@ -11,7 +11,7 @@ import Link from 'next/link'
 import { loadTaxYear, getAvailableTaxYears } from '@/lib/store/taxYear'
 import { CalculatorContainer } from '@/components/CalculatorContainer'
 import { JSONLD } from '@/components/seo/JSONLD'
-import { decodeStateFromURL } from '@/lib/store/url'
+import { decodeStateFromURL, decodeComparisonFromURL } from '@/lib/store/url'
 import { TaxYearGuide } from '@/components/seo/TaxYearGuide'
 
 interface PageProps {
@@ -23,12 +23,38 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { year } = await params
   const { config } = loadTaxYear(year)
   const displayYear = config.tax_year.replace('_', '/')
+  
+  const title = `UK Income Tax Calculator ${displayYear} | Take-home Pay`
+  const description = `Calculate your take-home pay, tax, NI, pension, and student loan deductions for the ${displayYear} UK tax year. Free, fast and accurate.`
+  const ogImage = `/api/og?year=${year}`
+
   return {
-    title: `UK Income Tax Calculator ${displayYear} | Take-home Pay`,
-    description: `Calculate your take-home pay, tax, NI, pension, and student loan deductions for the ${displayYear} UK tax year. Free, fast and accurate.`,
+    title,
+    description,
     alternates: {
       canonical: `/tax-year/${year}`,
-    }
+    },
+    openGraph: {
+      title,
+      description,
+      url: `https://taxcalculator365.com/tax-year/${year}`,
+      siteName: 'TaxCalculator365',
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+        },
+      ],
+      locale: 'en_GB',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [ogImage],
+    },
   }
 }
 
@@ -41,7 +67,19 @@ export default async function TaxYearPage({ params, searchParams }: PageProps) {
   const { year: yearParam } = await params
   const sParams = await searchParams
   const { config, year } = loadTaxYear(yearParam)
-  const initialInput = decodeStateFromURL(new URLSearchParams(sParams as any))
+  
+  // Handle both single scenario and comparison rehydration
+  const searchParamsObj = new URLSearchParams(sParams as any)
+  const isComparison = searchParamsObj.has('s1') || searchParamsObj.has('s2')
+  
+  let initialInput, initialBaseline
+  if (isComparison) {
+    const comparison = decodeComparisonFromURL(searchParamsObj)
+    initialInput = comparison.right
+    initialBaseline = comparison.left
+  } else {
+    initialInput = decodeStateFromURL(searchParamsObj)
+  }
 
   const displayYear = year.replace('_', '/')
 
@@ -112,7 +150,11 @@ export default async function TaxYearPage({ params, searchParams }: PageProps) {
           
           {/* Calculator Container with massive padding */}
           <div className="bg-background_surface rounded-[3rem] p-8 md:p-16">
-            <CalculatorContainer config={config} initialInput={initialInput} />
+            <CalculatorContainer 
+              config={config} 
+              initialInput={initialInput} 
+              initialBaseline={initialBaseline} 
+            />
           </div>
 
           {/* Primary CTA Box - Taxfix Purple */}

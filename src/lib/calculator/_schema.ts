@@ -28,6 +28,15 @@ export const TaxYearDataSchema = z.object({
   ni_employee_class1: z.array(TaxBandSchema),
   ni_self_employed_class4: z.array(TaxBandSchema),
 
+  dividend_allowance: z.number().min(0),
+  dividend_tax_bands: z.array(TaxBandSchema),
+  dividend_allowance_consumes_band: z.boolean(),
+
+  starting_rate_for_savings: z.number().min(0),
+  personal_savings_allowance_basic: z.number().min(0),
+  personal_savings_allowance_higher: z.number().min(0),
+  personal_savings_allowance_additional: z.number().min(0),
+
   student_loan_plans: z.array(z.object({
     plan: z.enum(['Plan1', 'Plan2', 'Plan4', 'Plan5', 'Postgraduate', 'None']),
     annual_threshold: z.number().min(0),

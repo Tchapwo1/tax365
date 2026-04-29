@@ -17,6 +17,7 @@ import { Toggle } from '@/components/ui/Toggle'
 import { PensionInput } from './advanced/PensionInput'
 import { StudentLoanSelect } from './advanced/StudentLoanSelect'
 import { ChildBenefitToggle } from './advanced/ChildBenefitToggle'
+import { DividendInput } from './advanced/DividendInput'
 
 export const InputPanel: React.FC = () => {
   const { input, status, updateInput, openAdvanced, closeAdvanced } = useCalculatorStore()
@@ -69,9 +70,15 @@ export const InputPanel: React.FC = () => {
           isOpen={isAdvancedOpen}
           onToggle={() => isAdvancedOpen ? closeAdvanced() : openAdvanced()}
         >
-          <PensionInput />
-          <StudentLoanSelect />
-          <ChildBenefitToggle />
+          <div className="flex flex-col gap-space_10 pt-space_4">
+            <PensionInput />
+            <div className="h-px bg-border_default/50" />
+            <DividendInput />
+            <div className="h-px bg-border_default/50" />
+            <StudentLoanSelect />
+            <div className="h-px bg-border_default/50" />
+            <ChildBenefitToggle />
+          </div>
         </Accordion>
       </div>
     </div>

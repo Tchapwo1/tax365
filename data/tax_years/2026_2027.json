@@ -28,6 +28,17 @@
     { "from": 12570, "to": 50270, "rate": 0.06 },
     { "from": 50270, "to": null, "rate": 0.02 }
   ],
+  "dividend_allowance": 500,
+  "dividend_allowance_consumes_band": true,
+  "dividend_tax_bands": [
+    { "band": "basic", "from": 0, "to": 37700, "rate": 0.1075 },
+    { "band": "higher", "from": 37700, "to": 112570, "rate": 0.3575 },
+    { "band": "additional", "from": 112570, "to": null, "rate": 0.3935 }
+  ],
+  "starting_rate_for_savings": 5000,
+  "personal_savings_allowance_basic": 1000,
+  "personal_savings_allowance_higher": 500,
+  "personal_savings_allowance_additional": 0,
   "student_loan_plans": [
     { "plan": "Plan1", "annual_threshold": 24990, "rate": 0.09 },
     { "plan": "Plan2", "annual_threshold": 27295, "rate": 0.09 },

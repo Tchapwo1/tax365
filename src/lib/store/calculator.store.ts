@@ -21,18 +21,29 @@ export const DEFAULT_INPUT: CalcInput = {
   studentLoan: { plan: 'None', includePostgraduate: false },
   pension: { type: 'percentage', value: 0 },
   childBenefit: { hasChildren: false, childrenCount: 0 },
+  dividendIncome: 0,
 }
 
 export interface CalculatorState {
   config: TaxYearConfig | null
   input: CalcInput
   output: CalcOutput | null
+  
+  // Comparison Mode
+  baselineInput: CalcInput | null
+  baselineOutput: CalcOutput | null
+  
   status: CalculatorStatus
   _debounceTimer: ReturnType<typeof setTimeout> | null
 
   // Actions
-  init: (config: TaxYearConfig, initialInput?: Partial<CalcInput>) => void
+  init: (config: TaxYearConfig, initialInput?: Partial<CalcInput>, initialBaseline?: CalcInput) => void
   updateInput: (patch: Partial<CalcInput>) => void
+  
+  // Comparison Actions
+  setBaseline: () => void
+  clearComparison: () => void
+  swapComparison: () => void
   
   // Specific setters for test suite
   setGrossIncome: (val: number) => void
@@ -52,13 +63,29 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => ({
   config: null,
   input: DEFAULT_INPUT,
   output: null,
+  baselineInput: null,
+  baselineOutput: null,
   status: 'idle',
   _debounceTimer: null,
 
-  init(config, initialInput) {
+  init(config, initialInput, initialBaseline) {
     const input = { ...DEFAULT_INPUT, ...initialInput }
-    set({ config, input, status: 'idle', output: null })
-    if (input.grossIncome > 0) {
+    
+    let baselineOutput = null
+    if (initialBaseline) {
+      baselineOutput = calculate(initialBaseline, config)
+    }
+
+    set({ 
+      config, 
+      input, 
+      baselineInput: initialBaseline || null,
+      baselineOutput,
+      status: 'idle', 
+      output: null 
+    })
+
+    if (input.grossIncome > 0 || (input.dividendIncome && input.dividendIncome > 0)) {
       get().calculateNow()
     }
   },
@@ -75,6 +102,41 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => ({
     }, DEBOUNCE_MS)
 
     set({ input: newInput, status: 'editing', _debounceTimer: timer })
+  },
+
+  setBaseline() {
+    const { input, output } = get()
+    if (!output) return
+    set({ 
+      baselineInput: { ...input },
+      baselineOutput: { ...output }
+    })
+    // Sync URL with comparison
+    if (typeof window !== 'undefined') {
+      const s1 = btoa(JSON.stringify(input)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+      window.history.replaceState({}, '', `?s1=${s1}&s2=${s1}`)
+    }
+  },
+
+  clearComparison() {
+    set({ baselineInput: null, baselineOutput: null })
+    // Sync URL back to single
+    const { input } = get()
+    if (typeof window !== 'undefined') {
+      const s = btoa(JSON.stringify(input)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+      window.history.replaceState({}, '', `?s=${s}`)
+    }
+  },
+
+  swapComparison() {
+    const { input, output, baselineInput, baselineOutput } = get()
+    if (!baselineInput || !baselineOutput) return
+    set({
+      input: baselineInput,
+      output: baselineOutput,
+      baselineInput: input,
+      baselineOutput: output
+    })
   },
 
   setGrossIncome(val) {
@@ -94,7 +156,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => ({
   },
 
   calculateNow() {
-    const { config, input } = get()
+    const { config, input, baselineInput } = get()
     if (!config) {
       set({ status: 'error' })
       return
@@ -102,7 +164,31 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => ({
 
     try {
       const output = calculate(input, config)
-      set({ output, status: 'showing_results', _debounceTimer: null })
+      
+      let newBaselineOutput = get().baselineOutput
+      if (baselineInput) {
+        newBaselineOutput = calculate(baselineInput, config)
+      }
+
+      set({ 
+        output, 
+        baselineOutput: newBaselineOutput,
+        status: 'showing_results', 
+        _debounceTimer: null 
+      })
+
+      // Sync URL
+      if (typeof window !== 'undefined') {
+        if (baselineInput) {
+          const s1 = btoa(JSON.stringify(baselineInput)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+          const s2 = btoa(JSON.stringify(input)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+          window.history.replaceState({}, '', `?s1=${s1}&s2=${s2}`)
+        } else {
+          const s = btoa(JSON.stringify(input)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+          window.history.replaceState({}, '', `?s=${s}`)
+        }
+      }
+
     } catch (err) {
       console.error('[CalculatorStore] Calculation failed:', err)
       set({ status: 'error', _debounceTimer: null })
@@ -121,6 +207,16 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => ({
   reset() {
     const { _debounceTimer } = get()
     if (_debounceTimer) clearTimeout(_debounceTimer)
-    set({ input: DEFAULT_INPUT, output: null, status: 'idle', _debounceTimer: null })
+    set({ 
+      input: DEFAULT_INPUT, 
+      output: null, 
+      baselineInput: null, 
+      baselineOutput: null, 
+      status: 'idle', 
+      _debounceTimer: null 
+    })
+    if (typeof window !== 'undefined') {
+      window.history.replaceState({}, '', '/')
+    }
   }
 }))

@@ -13,8 +13,7 @@ export const ShareLink: React.FC = () => {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = () => {
-    const params = encodeStateToURL(input)
-    const url = `${window.location.origin}${window.location.pathname}?${params}`
+    const url = window.location.href
     
     navigator.clipboard.writeText(url).then(() => {
       setCopied(true)
