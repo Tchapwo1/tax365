@@ -157,8 +157,8 @@ export default async function TaxYearPage({ params, searchParams }: PageProps) {
             />
           </div>
 
-          {/* Primary CTA Box - Taxfix Purple */}
-          <div className="bg-taxfix_purple rounded-[3rem] p-12 md:p-24 text-white flex flex-col items-start gap-8 relative overflow-hidden shadow-sm">
+          {/* Primary CTA Box - Action Gradient */}
+          <div className="bg-action-gradient rounded-[3rem] p-12 md:p-24 text-white flex flex-col items-start gap-8 relative overflow-hidden shadow-sm">
             <div className="flex flex-col gap-6 relative z-10 max-w-3xl">
               <h2 className="text-3xl md:text-5xl font-black tracking-tighter leading-tight">Have you sorted your tax return yet?</h2>
               <p className="text-lg md:text-xl font-medium leading-relaxed opacity-90">
@@ -166,7 +166,7 @@ export default async function TaxYearPage({ params, searchParams }: PageProps) {
                 and stress-free, starting from just £119. With the <span className="font-bold">31st January deadline</span> getting closer, now's a great time to get the official stuff out the way.
               </p>
               <div className="flex gap-4 mt-4">
-                <Link href="/get-started" className="bg-text_primary text-white px-10 py-4 rounded-full font-black text-lg hover:scale-105 transition-transform shadow-lg">
+                <Link href="/get-started" className="bg-white text-text_primary px-10 py-4 rounded-full font-black text-lg hover:scale-105 transition-transform shadow-lg">
                   Start now
                 </Link>
               </div>
