@@ -158,7 +158,7 @@ export default async function TaxYearPage({ params, searchParams }: PageProps) {
           </div>
 
           {/* Primary CTA Box - Taxfix Purple */}
-          <div className="bg-taxfix_purple rounded-[3rem] p-12 md:p-24 text-text_primary flex flex-col items-start gap-8 relative overflow-hidden shadow-sm">
+          <div className="bg-taxfix_purple rounded-[3rem] p-12 md:p-24 text-white flex flex-col items-start gap-8 relative overflow-hidden shadow-sm">
             <div className="flex flex-col gap-6 relative z-10 max-w-3xl">
               <h2 className="text-3xl md:text-5xl font-black tracking-tighter leading-tight">Have you sorted your tax return yet?</h2>
               <p className="text-lg md:text-xl font-medium leading-relaxed opacity-90">
